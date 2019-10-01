@@ -2,49 +2,67 @@ import cv2 as cv
 import numpy as np
 import math
 
-HSV_POSTIT_PINK = ('pink',156,155,198)
-HSV_POSTIT_ORANGE = ('orange',17,147,214)
+HSV_POSTIT_PINK = {'name':'pink','hsv':(153,155,198)}
+HSV_POSTIT_ORANGE = {'name':'orange','hsv':(16,147,214)}
+HSV_POSTIT_YELLOW = {'name':'yellow','hsv':(50,77,234)}
 
-def heading(xy0,xy1):
-    pass
+def get_xy_theta(hsv,color0,color1):
+	try:
+		c0,c1 = get_center(hsv,color0),get_center(hsv,color1)
+		dy,dx = c1[1]-c0[1], c1[0]-c0[0]
+		if dx==0:
+			m = math.inf * (-1 if dy<0 else 1)
+			theta = math.atan(m)
+		else:
+			m = abs(dy/dx)
+			theta = math.atan(m)
+		if dx<0 and dy>=0:
+			theta = math.pi-theta
+		elif dx<0 and dy<0:
+			theta = math.pi+theta
+		elif dx>=0 and dy<0:
+			theta = math.pi*2-theta
+		alpha = theta*360.0/(math.pi*2)
+		return (c0[0]+dx/2,c0[1]+dy/2,alpha)
+	except Exception as e:
+		print(e)
+		return None
 
-def get_center(hsv_frame, hsv_color, width=5, render=False):
-    lower = np.array((hsv_color[1]-width,128,50))
-    upper = np.array((hsv_color[1]+width,255,255))
-    mask = cv.inRange(hsv_frame, lower, upper)
-    mask = cv.erode(mask, None, iterations=2)
-    mask = cv.dilate(mask, None, iterations=2)
-    if render:
-        cv.imshow(hsv_color[0],mask)
-    contours, hierarchy = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    if (len(contours)>0):
-        largest = max(contours, key=cv.contourArea)
-        ((x, y), radius) = cv.minEnclosingCircle(largest)
-        M = cv.moments(largest)
-        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-        return center
-    else:
-        return (None, None)
+def get_center(hsv_frame, hsv, width=5, s=(50,200), v=(128,255), render=False):
+	hsv_vals = hsv['hsv']
+	lower = np.array((min(max(hsv_vals[0]-width,0),255),s[0],v[0]))
+	upper = np.array((min(max(hsv_vals[0]+width,0),255),s[1],v[1]))
+	mask = cv.inRange(hsv_frame, lower, upper)
+	mask = cv.erode(mask, None, iterations=2)
+	mask = cv.dilate(mask, None, iterations=2)
+	if render:
+		cv.imshow(hsv['name'],mask)
+	contours, hierarchy = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+	if (len(contours)>0):
+		largest = max(contours, key=cv.contourArea)
+		((x, y), radius) = cv.minEnclosingCircle(largest)
+		M = cv.moments(largest)
+		center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+		return center
+	else:
+		return None
 
 cap = cv.VideoCapture(0)
 while(True):
-    # Take each frame
-    _, frame = cap.read()
-    # Convert BGR to HSV
-    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    # define range of color in HSV
+	# Take each frame
+	_, frame = cap.read()
+	# Convert BGR to HSV
+	hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
 
-    try:
-        centers = [get_center(hsv, c, render=True) for c in (HSV_POSTIT_PINK,HSV_POSTIT_ORANGE)]
-        dy = centers[1][1]-centers[0][1]
-        dx = centers[1][0]-centers[0][0]
-        print('{0:.2f}'.format(math.atan(dy/dx)*360/(2*math.pi)),centers[0][0]-centers[1][0],centers[0][1]-centers[1][1])
-    except Exception:
-        heading = None
+	try:
+		centers = {c['name']:get_center(hsv, c, render=True) for c in (HSV_POSTIT_PINK,HSV_POSTIT_ORANGE,HSV_POSTIT_YELLOW)}
+		print(get_xy_theta(hsv,HSV_POSTIT_PINK,HSV_POSTIT_YELLOW))
+	except Exception as e:
+		print(e)
 
-    cv.imshow('frame',frame)
+	cv.imshow('frame',frame)
 
-    k = cv.waitKey(5) & 0xFF
-    if k == 27:
-        break
+	k = cv.waitKey(5) & 0xFF
+	if k == 27:
+		break
 cv.destroyAllWindows()
