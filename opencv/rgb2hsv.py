@@ -2,6 +2,10 @@ import cv2 as cv
 import argparse
 import numpy as np
 
+'''
+Converts RGB to HSV (using the HSV ranges native to OpenCV)
+'''
+
 ap = argparse.ArgumentParser()
 ap.add_argument('-r')
 ap.add_argument('-g')

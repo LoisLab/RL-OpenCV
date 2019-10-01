@@ -2,6 +2,11 @@ import cv2 as cv
 import numpy as np
 import math
 
+'''
+Proof of concept for tracking x,y,theta for a mini-robot using
+colored post-its and a webcam.
+'''
+
 HSV_POSTIT_PINK = {'name':'pink','hsv':(153,155,198)}
 HSV_POSTIT_ORANGE = {'name':'orange','hsv':(16,147,214)}
 HSV_POSTIT_YELLOW = {'name':'yellow','hsv':(50,77,234)}
@@ -16,6 +21,7 @@ def get_xy_theta(hsv,color0,color1):
 		else:
 			m = abs(dy/dx)
 			theta = math.atan(m)
+		# arctan has a limited domain...
 		if dx<0 and dy>=0:
 			theta = math.pi-theta
 		elif dx<0 and dy<0:

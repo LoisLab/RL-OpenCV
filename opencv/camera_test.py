@@ -1,20 +1,26 @@
 import numpy as np
-import cv2
+import cv2 as cv
+import numpy as np
 
-cap = cv2.VideoCapture(0)
+cap = cv.VideoCapture(0)
 
 while(True):
-    # Capture frame-by-frame
     ret, frame = cap.read()
+    cv.imshow('live video',frame)
 
-    # Our operations on the frame come here
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    cv.imshow('grayscale',gray)
 
-    # Display the resuqlting frame
-    cv2.imshow('frame',gray)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+    lower = np.array((0,32,32))
+    upper = np.array((255,255,255))
+    mask = cv.inRange(hsv, lower, upper)
+    cv.imshow('threshold',mask)
+
+    k = cv.waitKey(5) & 0xFF
+    if k == 27:
         break
 
 # When everything done, release the capture
 cap.release()
-cv2.destroyAllWindows()
+cv.destroyAllWindows()
