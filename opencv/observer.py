@@ -6,16 +6,20 @@ import math
 Observer that uses webcam to observer and report on playing field.
 '''
 
-class Observer:
-    PINK = {'name':'pink','hsv':(153,155,198)}
-    ORANGE = {'name':'orange','hsv':(16,147,214)}
-    YELLOW = {'name':'yellow','hsv':(50,77,234)}
+PINK = {'name':'pink','hsv':(153,155,198)}
+ORANGE = {'name':'orange','hsv':(16,147,214)}
+YELLOW = {'name':'yellow','hsv':(50,77,234)}
 
-    def __init__(self,sat_limits=(50,200),val_limits=(128,255),detection_width=5):
+class Observer:
+
+    def __init__(self,sat_limits=(50,200),val_limits=(128,255),detection_width=5,fore=PINK,aft=YELLOW, target=ORANGE):
         self.cap = cv.VideoCapture(0)
         self.sl = sat_limits
         self.vl = val_limits
         self.dw = detection_width
+        self.fore = fore
+        self.aft = aft
+        self.target = target
         self.update()
 
     def update(self):
@@ -23,6 +27,9 @@ class Observer:
 
     def show(self):
         cv.imshow('frame',self.frame)
+
+    def get_observation(self):
+        return np.array(self.get_xy_theta(self.fore,self.aft)+self.get_xy_theta(self.fore,self.target))
 
     def get_frame(self):
         status, frame = self.cap.read()
@@ -59,7 +66,7 @@ class Observer:
             elif dx>=0 and dy<0:
                 theta = math.pi*2-theta
             alpha = theta*360.0/(math.pi*2)
-            return (c0[0]+dx/2,c0[1]+dy/2,alpha)
+            return ((c0[0]+c1[0])/2,(c0[1]+c1[1])/2,alpha)
         except Exception as e:
             print(e)
             return None
@@ -76,15 +83,22 @@ class Observer:
         else:
             return None
 
+    def get_distance(self,color0,color1):
+        c0 = self.get_center(color0)
+        c1 = self.get_center(color1)
+        dx = float(c0[0]-c1[0])
+        dy = float(c0[1]-c1[1])
+        return (dx**2+dy**2)**0.5
+
     def test(self):
         while(True):
             self.update()
             self.show()
-            for c in (Observer.PINK,Observer.ORANGE,Observer.YELLOW):
+            for c in (PINK,ORANGE,YELLOW):
                 cv.imshow(c['name'],self.get_mask(c))
             try:
-                centers = {c['name']:self.get_center(c) for c in (Observer.PINK,Observer.ORANGE,Observer.YELLOW)}
-                print(self.get_xy_theta(Observer.PINK,Observer.YELLOW))
+                #print(self.get_observation(),self.get_distance(ORANGE,PINK))
+                print(self.get_center(ORANGE),self.get_center(YELLOW),self.get_distance(ORANGE,YELLOW))
             except Exception as e:
                 print(e)
             k = cv.waitKey(5) & 0xFF
