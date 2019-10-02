@@ -9,10 +9,13 @@ class HttpBot:
     def __init__(self,ip,delay=1.5):
         self.ip = ip
         self.webservice = http.client.HTTPConnection(ip)
+        self.delay=delay
 
     def step(self,n):
         try:
             self.webservice.request('GET','/action='+str(n))
-            time.sleep(delay)
+            status = self.webservice.getresponse().status
+            time.sleep(self.delay)
+            print(status)
         except Exception as e:
             print(e)

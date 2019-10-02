@@ -20,7 +20,6 @@ class Observer:
         self.fore = fore
         self.aft = aft
         self.target = target
-        self.update()
 
     def update(self):
         self.frame = self.get_frame()
