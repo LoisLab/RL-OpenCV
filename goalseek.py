@@ -8,12 +8,13 @@ Goal seeking reinforcement-learning environment for minibot
 class GoalSeek:
     action_space = [x for x in range(8)]
 
-    def __init__(self,ip,delay=1.5):
+    def __init__(self,ip,delay=0.75):
         self.bot = HttpBot(ip)
         self.observer = Observer()
         self.delay = delay
 
     def reset(self):
+        self.observer.update()
         return self.observer.get_observation()
 
     def step(self,action):
