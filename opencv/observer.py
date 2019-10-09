@@ -13,7 +13,7 @@ YELLOW = {'name':'yellow','hsv':(50,77,234)}
 
 class Observer:
 
-    def __init__(self,sat_limits=(50,200),val_limits=(128,255),detection_width=5,fore=PINK,aft=YELLOW, target=ORANGE):
+    def __init__(self,sat_limits=(50,200),val_limits=(128,255),detection_width=8,fore=PINK,aft=YELLOW, target=ORANGE):
         self.cap = cv.VideoCapture(0)
         self.cap.set(cv.CAP_PROP_BUFFERSIZE,1) # set buffer size to 1
         self.sl = sat_limits
@@ -39,9 +39,9 @@ class Observer:
         xyt_bot = self.get_xy_theta(self.fore, self.aft)
         xyt_tgt = self.get_xy_theta(self.target, self.fore)
         distance = self.get_distance(self.fore, self.target)
-        bearing = xyt_bot[2]-xyt_tgt[2]
-        bearing = bearing+180 if bearing < -180 else bearing
-        return np.array(xyt_bot+xyt_tgt+(distance,)+(bearing,))
+        rel_bearing = xyt_bot[2]-xyt_tgt[2]
+        rel_bearing += 360 if rel_bearing<-180 else 0
+        return np.array(xyt_bot+xyt_tgt+(distance,)+(rel_bearing,))
 
     def print_obs(self,obs):
         print('x,y,t bot', obs[0:3])
@@ -72,23 +72,27 @@ class Observer:
             c0,c1 = self.get_center(color0),self.get_center(color1)
             dy,dx = c1[1]-c0[1], c1[0]-c0[0]
             if dx==0:
-                m = math.inf * (-1 if dy<0 else 1)
-                theta = math.atan(m)
+                theta = math.pi/2 if dy>0 else 3*math.pi/2
+            elif dy==0:
+                theta = 0 if dx>0 else math.pi
             else:
                 m = abs(dy/dx)
-                theta = math.atan(m)
-            # arctan has a limited domain...
-            if dx<0 and dy>=0:
-                theta = math.pi-theta
-            elif dx<0 and dy<0:
-                theta = math.pi+theta
-            elif dx>=0 and dy<0:
-                theta = math.pi*2-theta
+                theta = math.atan(m)            # 1st quadrant (assumed)
+                if dx<0:                        # 2nd or 3rd quadrant...
+                    if dy<0:
+                        theta = math.pi+theta   # ...3rd quadrant
+                    else:
+                        theta = math.pi-theta   # ...2nd quadrant
+                elif dy<0:
+                    theta = 2*math.pi-theta     # 4th quadrant
             alpha = theta*360.0/(math.pi*2)
+            alpha += 360 if alpha < 0 else 0
             return ((c0[0]+c1[0])/2,(c0[1]+c1[1])/2,alpha)
+
         except Exception as e:
             print(e)
             return None
+
 
     def get_center(self, hsv_color):
         mask = self.get_mask(hsv_color)
@@ -121,8 +125,22 @@ class Observer:
             for c in (PINK,ORANGE,YELLOW):
                 cv.imshow(c['name'],self.get_mask(c))
             try:
-                #print(self.get_observation(),self.get_distance(ORANGE,PINK))
-                print(self.get_center(ORANGE),self.get_center(YELLOW),self.get_distance(ORANGE,YELLOW))
+                heading = self.get_xy_theta(self.fore,self.aft)[2]
+                abs_bearing = self.get_xy_theta(self.target,self.fore)[2]
+                rel_bearing = heading - abs_bearing
+                rel_bearing += 360 if rel_bearing<-180 else 0
+                print(self.get_center(ORANGE),\
+                      self.get_center(YELLOW),\
+                      self.get_center(PINK),\
+                      'distance=',\
+                      '{:+.2f}'.format(self.get_distance(PINK,ORANGE)),\
+                      'heading=',\
+                      '{:+.2f}'.format(heading),\
+                      'abs bearing',\
+                      '{:+.2f}'.format(abs_bearing),\
+                      'rel bearing',\
+                      '{:+.2f}'.format(rel_bearing))
+                print(self.get_observation())
             except Exception as e:
                 print(e)
             k = cv.waitKey(5) & 0xFF
