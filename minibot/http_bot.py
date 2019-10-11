@@ -16,6 +16,16 @@ class HttpBot:
             self.webservice.request('GET','/action='+str(n))
             status = self.webservice.getresponse().status
             time.sleep(self.delay)
-            print(status)
+            if not status==200:
+                print(status)
+        except Exception as e:
+            print(e)
+
+    def set_speed(self,speed):
+        try:
+            self.webservice.request('GET','/speed='+str(speed))
+            status = self.webservice.getresponse().status
+            if not status==200:
+                print(status)
         except Exception as e:
             print(e)

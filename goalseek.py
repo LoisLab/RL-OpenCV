@@ -1,3 +1,4 @@
+import numpy as np
 from opencv.observer import *
 from minibot.http_bot import *
 
@@ -6,9 +7,9 @@ Goal seeking reinforcement-learning environment for minibot
 '''
 
 class GoalSeek:
-    action_space = [x for x in range(8)]
+    actions = [x for x in range(8)]
 
-    def __init__(self,ip,delay=0.75):
+    def __init__(self,ip,delay=0.4):
         self.bot = HttpBot(ip)
         self.observer = Observer()
         self.delay = delay
@@ -30,3 +31,6 @@ class GoalSeek:
             print(e)
             done = True
         return self.observer.get_observation(), d0-d1, done
+
+    def sample(self):
+        return np.random.choice(GoalSeek.actions)
